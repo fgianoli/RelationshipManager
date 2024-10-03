@@ -1,3 +1,5 @@
+![Icon]([https://example.com/path-to-your-image.png](https://github.com/fgianoli/RelationshipManager/blob/main/relationManager.png?raw=true))
+
 # QGIS Relations Management Plugin
 
 The **QGIS Relations Management Plugin** is a powerful tool designed to simplify the handling and management of 1:N relationships within a QGIS project. It provides an intuitive interface for viewing, modifying, duplicating, deleting, and exporting project relationships. This plugin is especially useful for managing complex geospatial data that involve linked layers, enabling users to maintain relational integrity and flexibility.
