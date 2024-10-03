@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QListWidget, QPushButton, QFileDialog, 
                              QMessageBox, QInputDialog, QComboBox, QLabel, QFormLayout, 
                              QDialogButtonBox, QLineEdit)
@@ -39,6 +38,9 @@ class RelazioniPluginDialog(QDialog):
         self.btnElimina = QPushButton(QIcon(':/plugins/relazioniplugin/delete.png'), "Delete Relationship")
         layout.addWidget(self.btnElimina)
 
+        self.btnCrea = QPushButton(QIcon(':/plugins/relazioniplugin/create.png'), "Create Relationship")
+        layout.addWidget(self.btnCrea)
+
         self.btnStorico = QPushButton(QIcon(':/plugins/relazioniplugin/history.png'), "View History")
         layout.addWidget(self.btnStorico)
 
@@ -50,6 +52,7 @@ class RelazioniPluginDialog(QDialog):
         self.btnModifica.clicked.connect(self.apri_modifica_relazione)
         self.btnDuplica.clicked.connect(self.duplica_relazione)
         self.btnElimina.clicked.connect(self.elimina_relazione)
+        self.btnCrea.clicked.connect(self.crea_nuova_relazione)
         self.btnStorico.clicked.connect(self.visualizza_storico)
 
         # Load relationships on startup
@@ -213,6 +216,61 @@ class RelazioniPluginDialog(QDialog):
         dlg.setLayout(layout)
         dlg.exec_()
 
+    def crea_nuova_relazione(self):
+        """Create a new relationship."""
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Create Relationship")
+        layout = QFormLayout()
+
+        nome_relazione = QLineEdit()
+        layer_padre = self._crea_layer_combo(None)
+        layer_figlio = self._crea_layer_combo(None)
+
+        chiavi_padre = self._crea_field_combo(layer_padre.currentText(), None)
+        chiavi_figlio = self._crea_field_combo(layer_figlio.currentText(), None)
+
+        layout.addRow("Relationship Name:", nome_relazione)
+        layout.addRow("Parent Layer:", layer_padre)
+        layout.addRow("Child Layer:", layer_figlio)
+        layout.addRow("Parent Key:", chiavi_padre)
+        layout.addRow("Child Key:", chiavi_figlio)
+
+        buttonBox = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        layout.addWidget(buttonBox)
+        dialog.setLayout(layout)
+
+        # Connect the confirm button
+        buttonBox.accepted.connect(lambda: self.crea_relazione_esistente({
+            'nome': nome_relazione.text(),
+            'layer_padre': layer_padre.currentText(),
+            'layer_figlio': layer_figlio.currentText(),
+            'chiavi': {chiavi_padre.currentText(): chiavi_figlio.currentText()}
+        }))
+        buttonBox.rejected.connect(dialog.reject)
+
+        dialog.exec()
+
+    def crea_relazione_esistente(self, nuova_relazione):
+        """Create a new relationship."""
+        project = QgsProject.instance()
+
+        # Create the new relationship
+        layer_figlio = project.mapLayersByName(nuova_relazione['layer_figlio'])[0]
+        layer_padre = project.mapLayersByName(nuova_relazione['layer_padre'])[0]
+
+        relation = QgsRelation()
+        relation.setName(nuova_relazione['nome'])
+        relation.setReferencingLayer(layer_figlio.id())
+        relation.setReferencedLayer(layer_padre.id())
+
+        for chiave_padre, chiave_figlio in nuova_relazione['chiavi'].items():
+            relation.addFieldPair(chiave_padre, chiave_figlio)
+
+        project.relationManager().addRelation(relation)
+        self.carica_lista_relazioni()
+        self.add_to_history(f"Created new relationship: {nuova_relazione['nome']}")
+        QMessageBox.information(self, "Create", "Relationship created successfully!")
+
     def ottieni_relazioni(self):
         """Get all relationships in the project."""
         relazioni = {}
@@ -263,7 +321,7 @@ class RelazioniPluginDialog(QDialog):
         project = QgsProject.instance()
         for layer in project.mapLayers().values():
             combo.addItem(layer.name())
-            if layer.id() == layer_id_preselezionato:
+            if layer_id_preselezionato and layer.id() == layer_id_preselezionato:
                 combo.setCurrentText(layer.name())
         return combo
 
@@ -271,9 +329,10 @@ class RelazioniPluginDialog(QDialog):
         """Create a combobox to select key fields."""
         combo = QComboBox()
         project = QgsProject.instance()
-        layer = project.mapLayersByName(layer_name)[0]
-        for field in layer.fields():
-            combo.addItem(field.name())
-            if field.name() == chiave_preselezionata:
-                combo.setCurrentText(field.name())
+        if layer_name:
+            layer = project.mapLayersByName(layer_name)[0]
+            for field in layer.fields():
+                combo.addItem(field.name())
+                if chiave_preselezionata and field.name() == chiave_preselezionata:
+                    combo.setCurrentText(field.name())
         return combo
