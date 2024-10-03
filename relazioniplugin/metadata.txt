@@ -23,9 +23,9 @@ hasProcessingProvider=no
 # changelog=
 
 # Tags are comma separated with spaces allowed
-tags=python
+tags=relation, relationship, 1:n, project relations
 
-homepage=http://homepage
+homepage=https://github.com/fgianoli/RelationshipManager
 category=Plugins
 icon=icon.png
 # experimental flag
