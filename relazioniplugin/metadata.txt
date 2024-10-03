@@ -10,9 +10,7 @@ version=0.1
 author=Federico Gianoli
 email=gianoli.federico@gmail.com
 
-about=The QGIS Relations Management Plugin simplifies the handling of 1:N relationships in QGIS projects. 
-It allows users to view, modify, duplicate, delete, export, and import relationships between layers. 
-The plugin also provides a history of changes for rollback. Ideal for managing complex geospatial data, it streamlines project organization and ensures relational integrity with an easy-to-use interface.
+about=The QGIS Relations Management Plugin simplifies the handling of 1:N relationships in QGIS projects. It allows users to view, modify, duplicate, delete, export, and import relationships between layers. The plugin also provides a history of changes for rollback. Ideal for managing complex geospatial data, it streamlines project organization and ensures relational integrity with an easy-to-use interface.
 
 tracker=https://github.com/fgianoli/RelationshipManager/issues
 repository=https://github.com/fgianoli/RelationshipManager
