@@ -1,4 +1,5 @@
-![Icon]([https://example.com/path-to-your-image.png](https://github.com/fgianoli/RelationshipManager/blob/main/relationManager.png?raw=true))
+![Relationship Manager Icon](https://raw.githubusercontent.com/fgianoli/RelationshipManager/refs/heads/main/relationManager.png)
+
 
 # QGIS Relations Management Plugin
 
