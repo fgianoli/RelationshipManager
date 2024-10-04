@@ -1,8 +1,9 @@
+# -*- coding: utf-8 -*-
 from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QListWidget, QPushButton, QFileDialog, 
                              QMessageBox, QInputDialog, QComboBox, QLabel, QFormLayout, 
                              QDialogButtonBox, QLineEdit)
 from PyQt5.QtGui import QIcon
-from qgis.core import QgsProject, QgsRelation, QgsFields
+from qgis.core import QgsProject, QgsRelation
 import json
 from datetime import datetime
 
@@ -38,9 +39,6 @@ class RelazioniPluginDialog(QDialog):
         self.btnElimina = QPushButton(QIcon(':/plugins/relazioniplugin/delete.png'), "Delete Relationship")
         layout.addWidget(self.btnElimina)
 
-        self.btnCrea = QPushButton(QIcon(':/plugins/relazioniplugin/create.png'), "Create Relationship")
-        layout.addWidget(self.btnCrea)
-
         self.btnStorico = QPushButton(QIcon(':/plugins/relazioniplugin/history.png'), "View History")
         layout.addWidget(self.btnStorico)
 
@@ -52,7 +50,6 @@ class RelazioniPluginDialog(QDialog):
         self.btnModifica.clicked.connect(self.apri_modifica_relazione)
         self.btnDuplica.clicked.connect(self.duplica_relazione)
         self.btnElimina.clicked.connect(self.elimina_relazione)
-        self.btnCrea.clicked.connect(self.crea_nuova_relazione)
         self.btnStorico.clicked.connect(self.visualizza_storico)
 
         # Load relationships on startup
@@ -209,67 +206,32 @@ class RelazioniPluginDialog(QDialog):
         layout = QVBoxLayout(dlg)
 
         history_list = QListWidget()
-        for timestamp, action in self.history:
+        for index, (timestamp, action, _) in enumerate(self.history):
             history_list.addItem(f'{timestamp}: {action}')
-
+        
         layout.addWidget(history_list)
+        
+        # Add rollback button
+        rollback_button = QPushButton("Rollback to selected change")
+        layout.addWidget(rollback_button)
         dlg.setLayout(layout)
+
+        rollback_button.clicked.connect(lambda: self.rollback_modifica(history_list.currentRow()))
+        
         dlg.exec_()
 
-    def crea_nuova_relazione(self):
-        """Create a new relationship."""
-        dialog = QDialog(self)
-        dialog.setWindowTitle("Create Relationship")
-        layout = QFormLayout()
-
-        nome_relazione = QLineEdit()
-        layer_padre = self._crea_layer_combo(None)
-        layer_figlio = self._crea_layer_combo(None)
-
-        chiavi_padre = self._crea_field_combo(layer_padre.currentText(), None)
-        chiavi_figlio = self._crea_field_combo(layer_figlio.currentText(), None)
-
-        layout.addRow("Relationship Name:", nome_relazione)
-        layout.addRow("Parent Layer:", layer_padre)
-        layout.addRow("Child Layer:", layer_figlio)
-        layout.addRow("Parent Key:", chiavi_padre)
-        layout.addRow("Child Key:", chiavi_figlio)
-
-        buttonBox = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
-        layout.addWidget(buttonBox)
-        dialog.setLayout(layout)
-
-        # Connect the confirm button
-        buttonBox.accepted.connect(lambda: self.crea_relazione_esistente({
-            'nome': nome_relazione.text(),
-            'layer_padre': layer_padre.currentText(),
-            'layer_figlio': layer_figlio.currentText(),
-            'chiavi': {chiavi_padre.currentText(): chiavi_figlio.currentText()}
-        }))
-        buttonBox.rejected.connect(dialog.reject)
-
-        dialog.exec()
-
-    def crea_relazione_esistente(self, nuova_relazione):
-        """Create a new relationship."""
-        project = QgsProject.instance()
-
-        # Create the new relationship
-        layer_figlio = project.mapLayersByName(nuova_relazione['layer_figlio'])[0]
-        layer_padre = project.mapLayersByName(nuova_relazione['layer_padre'])[0]
-
-        relation = QgsRelation()
-        relation.setName(nuova_relazione['nome'])
-        relation.setReferencingLayer(layer_figlio.id())
-        relation.setReferencedLayer(layer_padre.id())
-
-        for chiave_padre, chiave_figlio in nuova_relazione['chiavi'].items():
-            relation.addFieldPair(chiave_padre, chiave_figlio)
-
-        project.relationManager().addRelation(relation)
-        self.carica_lista_relazioni()
-        self.add_to_history(f"Created new relationship: {nuova_relazione['nome']}")
-        QMessageBox.information(self, "Create", "Relationship created successfully!")
+    def rollback_modifica(self, history_index):
+        """Rollback to a previous relationship modification."""
+        if history_index < 0 or history_index >= len(self.history):
+            QMessageBox.warning(self, "Error", "Please select a valid history item.")
+            return
+        
+        # Get the details of the old relationship
+        _, _, old_relation_details = self.history[history_index]
+        
+        # Reapply the old relationship details
+        self.modifica_relazione_esistente(old_relation_details['id'], old_relation_details)
+        QMessageBox.information(self, "Rollback", "The relationship has been restored to a previous version.")
 
     def ottieni_relazioni(self):
         """Get all relationships in the project."""
@@ -289,6 +251,16 @@ class RelazioniPluginDialog(QDialog):
         project = QgsProject.instance()
         relation_manager = project.relationManager()
 
+        # Get the old relationship details before modifying
+        relation = relation_manager.relation(relazione_id)
+        old_relation_details = {
+            'id': relazione_id,
+            'nome': relation.name(),
+            'layer_figlio': relation.referencingLayer().name(),
+            'layer_padre': relation.referencedLayer().name(),
+            'chiavi': relation.fieldPairs()
+        }
+
         # Remove the existing relationship
         relation_manager.removeRelation(relazione_id)
 
@@ -307,13 +279,16 @@ class RelazioniPluginDialog(QDialog):
 
         relation_manager.addRelation(relation)
         self.carica_lista_relazioni()
-        self.add_to_history(f"Edited relationship: {relazione_id}")
+
+        # Add the action to history with old relation details
+        self.add_to_history(f"Edited relationship: {relazione_id}", old_relation_details)
+
         QMessageBox.information(self, "Edit", "Relationship modified successfully!")
 
-    def add_to_history(self, action):
-        """Add an action to the modification history."""
+    def add_to_history(self, action, relation_details):
+        """Add an action to the modification history, saving the relationship details."""
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        self.history.append((timestamp, action))
+        self.history.append((timestamp, action, relation_details))
 
     def _crea_layer_combo(self, layer_id_preselezionato):
         """Create a combobox to select layers in the project."""
@@ -321,7 +296,7 @@ class RelazioniPluginDialog(QDialog):
         project = QgsProject.instance()
         for layer in project.mapLayers().values():
             combo.addItem(layer.name())
-            if layer_id_preselezionato and layer.id() == layer_id_preselezionato:
+            if layer.id() == layer_id_preselezionato:
                 combo.setCurrentText(layer.name())
         return combo
 
@@ -329,10 +304,9 @@ class RelazioniPluginDialog(QDialog):
         """Create a combobox to select key fields."""
         combo = QComboBox()
         project = QgsProject.instance()
-        if layer_name:
-            layer = project.mapLayersByName(layer_name)[0]
-            for field in layer.fields():
-                combo.addItem(field.name())
-                if chiave_preselezionata and field.name() == chiave_preselezionata:
-                    combo.setCurrentText(field.name())
+        layer = project.mapLayersByName(layer_name)[0]
+        for field in layer.fields():
+            combo.addItem(field.name())
+            if field.name() == chiave_preselezionata:
+                combo.setCurrentText(field.name())
         return combo
