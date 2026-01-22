@@ -41,7 +41,7 @@ Managing 1:N relationships in a QGIS project can be cumbersome, especially when 
 
 ## Changelog
 
-### Version 2.0
+### Version 1.2
 This release addresses three issues reported by users and introduces several improvements.
 
 **Bug Fixes:**
