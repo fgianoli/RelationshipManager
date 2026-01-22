@@ -8,6 +8,8 @@ from qgis.core import QgsProject, QgsRelation
 import json
 import uuid
 from datetime import datetime
+from PyQt5.QtWidgets import QVBoxLayout, QTabWidget, QWidget, QTextEdit
+
 
 class RelazioniPluginDialog(QDialog):
     def __init__(self):
@@ -18,38 +20,74 @@ class RelazioniPluginDialog(QDialog):
         # Set plugin icon
         self.setWindowIcon(QIcon(':/plugins/relazioniplugin/icon.png'))
 
-        # Create layout and widgets manually
+        # Crea il layout principale e aggiungi il TabWidget
         layout = QVBoxLayout()
+        self.tabs = QTabWidget()
+
+        # Tab per la gestione delle relazioni
+        tab_relazioni = QWidget()
+        tab_relazioni_layout = QVBoxLayout()
 
         # Relationships list
         self.listaRelazioni = QListWidget()
-        layout.addWidget(self.listaRelazioni)
+        tab_relazioni_layout.addWidget(self.listaRelazioni)
 
         # Buttons with icons
         self.btnEsporta = QPushButton(QIcon(':/plugins/relazioniplugin/export.png'), "Export Relationships")
-        layout.addWidget(self.btnEsporta)
+        tab_relazioni_layout.addWidget(self.btnEsporta)
 
         self.btnCarica = QPushButton(QIcon(':/plugins/relazioniplugin/import.png'), "Load Relationships")
-        layout.addWidget(self.btnCarica)
+        tab_relazioni_layout.addWidget(self.btnCarica)
 
         self.btnModifica = QPushButton(QIcon(':/plugins/relazioniplugin/edit.png'), "Edit Relationship")
-        layout.addWidget(self.btnModifica)
+        tab_relazioni_layout.addWidget(self.btnModifica)
 
         self.btnDuplica = QPushButton(QIcon(':/plugins/relazioniplugin/duplicate.png'), "Duplicate Relationship")
-        layout.addWidget(self.btnDuplica)
+        tab_relazioni_layout.addWidget(self.btnDuplica)
 
         self.btnElimina = QPushButton(QIcon(':/plugins/relazioniplugin/delete.png'), "Delete Relationship")
-        layout.addWidget(self.btnElimina)
+        tab_relazioni_layout.addWidget(self.btnElimina)
 
         self.btnCrea = QPushButton(QIcon(':/plugins/relazioniplugin/create.png'), "Create Relationship")
-        layout.addWidget(self.btnCrea)
+        tab_relazioni_layout.addWidget(self.btnCrea)
 
         self.btnStorico = QPushButton(QIcon(':/plugins/relazioniplugin/history.png'), "View History")
-        layout.addWidget(self.btnStorico)
+        tab_relazioni_layout.addWidget(self.btnStorico)
 
+        # Imposta il layout della tab "Relazioni"
+        tab_relazioni.setLayout(tab_relazioni_layout)
+
+        # Tab per l'help
+        tab_help = QWidget()
+        help_layout = QVBoxLayout()
+
+        # Casella di testo per mostrare l'help
+        help_text = QTextEdit()
+        help_text.setReadOnly(True)
+        help_text.setHtml("""
+            <h1>Relationship Plugin Help</h1>
+            <p>This plugin allows you to manage relationships in a QGIS project. Below are some of the main features:</p>
+            <ul>
+                <li><b>Export relationships</b>: Exports relationships to a JSON file.</li>
+                <li><b>Load relationships</b>: Imports relationships from a JSON file.</li>
+                <li><b>Edit relationships</b>: Modifies an existing relationship.</li>
+                <li><b>Duplicate relationships</b>: Creates a copy of an existing relationship.</li>
+                <li><b>Delete relationships</b>: Removes a relationship from the project.</li>
+                <li><b>Create new relationship</b>: Creates a new relationship between two layers.</li>
+            </ul>
+            """)
+        help_layout.addWidget(help_text)
+        tab_help.setLayout(help_layout)
+
+        # Aggiungi le tab al TabWidget
+        self.tabs.addTab(tab_relazioni, "Relation Manager")
+        self.tabs.addTab(tab_help, "Help")
+
+        # Aggiungi il TabWidget al layout principale
+        layout.addWidget(self.tabs)
         self.setLayout(layout)
 
-        # Connect buttons to their functions
+        # Collega i pulsanti alle loro funzioni
         self.btnEsporta.clicked.connect(self.esporta_relazioni)
         self.btnCarica.clicked.connect(self.carica_relazioni)
         self.btnModifica.clicked.connect(self.apri_modifica_relazione)
@@ -58,10 +96,10 @@ class RelazioniPluginDialog(QDialog):
         self.btnCrea.clicked.connect(self.crea_nuova_relazione)
         self.btnStorico.clicked.connect(self.visualizza_storico)
 
-        # Load relationships on startup
+        # Carica le relazioni all'avvio
         self.carica_lista_relazioni()
 
-        # Initialize history storage
+        # Inizializza la cronologia
         self.history = []
 
     def carica_lista_relazioni(self):
