@@ -227,11 +227,23 @@ class RelazioniPluginDialog(QDialog):
         self.btnCrea.clicked.connect(self.crea_nuova_relazione)
         self.btnStorico.clicked.connect(self.visualizza_storico)
 
+        # Inizializza la cronologia
+        self.history = []
+
+        # FIX ISSUE 3: Connect to project change signals to refresh the list
+        # This ensures the plugin reloads relations when project changes
+        QgsProject.instance().cleared.connect(self.on_project_changed)
+        QgsProject.instance().readProject.connect(self.on_project_changed)
+        
         # Carica le relazioni all'avvio
         self.carica_lista_relazioni()
 
-        # Inizializza la cronologia
+    def on_project_changed(self):
+        """Handle project change - clear and reload relations list."""
+        # Clear the history when project changes
         self.history = []
+        # Reload the relations list from the new project
+        self.carica_lista_relazioni()
 
     def carica_lista_relazioni(self):
         """List all relationships in the QGIS project."""
