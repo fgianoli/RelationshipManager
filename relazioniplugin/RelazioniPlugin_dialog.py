@@ -65,16 +65,147 @@ class RelazioniPluginDialog(QDialog):
         help_text = QTextEdit()
         help_text.setReadOnly(True)
         help_text.setHtml("""
-            <h1>Relationship Plugin Help</h1>
-            <p>This plugin allows you to manage relationships in a QGIS project. Below are some of the main features:</p>
+            <style>
+                body { font-family: Arial, sans-serif; line-height: 1.5; }
+                h1 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+                h2 { color: #34495e; margin-top: 20px; }
+                h3 { color: #7f8c8d; }
+                .feature { background-color: #ecf0f1; padding: 10px; margin: 10px 0; border-left: 4px solid #3498db; }
+                .tip { background-color: #d5f5e3; padding: 10px; margin: 10px 0; border-left: 4px solid #27ae60; }
+                .warning { background-color: #fcf3cf; padding: 10px; margin: 10px 0; border-left: 4px solid #f39c12; }
+                .example { background-color: #e8f6f3; padding: 10px; margin: 10px 0; font-family: monospace; }
+                code { background-color: #f4f4f4; padding: 2px 6px; border-radius: 3px; }
+            </style>
+            
+            <h1>🔗 Relationship Manager Plugin</h1>
+            <p><b>Version 1.2</b> - Manage layer relationships in your QGIS projects with ease.</p>
+            
+            <h2>📋 What are Relationships?</h2>
+            <p>Relationships in QGIS connect features from different layers using key fields. 
+            For example, you can link a <i>Buildings</i> layer to a <i>Addresses</i> layer 
+            using a common field like <code>building_id</code>.</p>
+            
+            <div class="tip">
+                <b>💡 Tip:</b> Relationships enable powerful features like automatic forms with 
+                related records, and are essential for working with relational databases.
+            </div>
+            
+            <h2>🛠️ Features</h2>
+            
+            <div class="feature">
+                <h3>➕ Create Relationship</h3>
+                <p>Create a new relationship between two layers:</p>
+                <ol>
+                    <li>Click <b>"Create Relationship"</b></li>
+                    <li>Enter a name for the relationship</li>
+                    <li>Select the <b>Parent Layer</b> (the "one" side, e.g., Buildings)</li>
+                    <li>Select the <b>Child Layer</b> (the "many" side, e.g., Apartments)</li>
+                    <li>Choose the <b>Key Fields</b> that link the two layers</li>
+                    <li>Click OK to create</li>
+                </ol>
+            </div>
+            
+            <div class="feature">
+                <h3>📤 Export Relationships</h3>
+                <p>Save all project relationships to a JSON file. Useful for:</p>
+                <ul>
+                    <li>Backing up your relationship configuration</li>
+                    <li>Sharing relationships with colleagues</li>
+                    <li>Reusing the same structure in other projects</li>
+                </ul>
+            </div>
+            
+            <div class="feature">
+                <h3>📥 Load Relationships</h3>
+                <p>Import relationships from a previously exported JSON file.</p>
+                <div class="warning">
+                    <b>⚠️ Note:</b> The layers referenced in the JSON must exist in the 
+                    current project with the same names.
+                </div>
+            </div>
+            
+            <div class="feature">
+                <h3>✏️ Edit Relationship</h3>
+                <p>Modify an existing relationship. Select it from the list and click 
+                <b>"Edit Relationship"</b> to change its name, layers, or key fields.</p>
+            </div>
+            
+            <div class="feature">
+                <h3>📋 Duplicate Relationship</h3>
+                <p>Create a copy of an existing relationship with a new name. 
+                Useful when creating similar relationships.</p>
+            </div>
+            
+            <div class="feature">
+                <h3>🗑️ Delete Relationship</h3>
+                <p>Remove a relationship from the project. This action can be undone 
+                using the History feature.</p>
+            </div>
+            
+            <div class="feature">
+                <h3>📜 View History</h3>
+                <p>See all changes made during this session and rollback if needed.</p>
+            </div>
+            
+            <h2>📖 Example: Building-Apartment Relationship</h2>
+            <div class="example">
+                <b>Scenario:</b> Link buildings to their apartments<br><br>
+                <b>Parent Layer:</b> buildings (with field <code>building_id</code>)<br>
+                <b>Child Layer:</b> apartments (with field <code>fk_building</code>)<br>
+                <b>Parent Key:</b> building_id<br>
+                <b>Child Key:</b> fk_building<br><br>
+                This creates a 1:N relationship where each building can have many apartments.
+            </div>
+            
+            <h2>🔧 Troubleshooting</h2>
+            
+            <div class="warning">
+                <h3>❌ "Key fields not found"</h3>
+                <p>This error occurs when the selected field doesn't exist in the layer. Check that:</p>
+                <ul>
+                    <li>Field names are spelled correctly (case-sensitive)</li>
+                    <li>You selected the correct layer</li>
+                    <li>The field exists in both layers</li>
+                </ul>
+            </div>
+            
+            <div class="warning">
+                <h3>❌ Relationship shows as "(INVALID)"</h3>
+                <p>The relationship configuration is incorrect. Common causes:</p>
+                <ul>
+                    <li>One of the layers was removed from the project</li>
+                    <li>A key field was renamed or deleted</li>
+                    <li>Layer IDs changed (can happen when re-adding layers)</li>
+                </ul>
+                <p><b>Solution:</b> Delete the invalid relationship and recreate it.</p>
+            </div>
+            
+            <div class="warning">
+                <h3>❌ Relationships not loading from JSON</h3>
+                <p>When importing, ensure that:</p>
+                <ul>
+                    <li>All referenced layers exist in the current project</li>
+                    <li>Layer names match exactly (case-sensitive)</li>
+                    <li>Key fields exist in the layers</li>
+                </ul>
+            </div>
+            
+            <h2>💡 Best Practices</h2>
             <ul>
-                <li><b>Export relationships</b>: Exports relationships to a JSON file.</li>
-                <li><b>Load relationships</b>: Imports relationships from a JSON file.</li>
-                <li><b>Edit relationships</b>: Modifies an existing relationship.</li>
-                <li><b>Duplicate relationships</b>: Creates a copy of an existing relationship.</li>
-                <li><b>Delete relationships</b>: Removes a relationship from the project.</li>
-                <li><b>Create new relationship</b>: Creates a new relationship between two layers.</li>
+                <li>Use meaningful relationship names (e.g., "building_has_apartments")</li>
+                <li>Export relationships regularly as backup</li>
+                <li>Use consistent naming conventions for key fields</li>
+                <li>Supported key field types: Integer, String, UUID, and more</li>
             </ul>
+            
+            <h2>📞 Support</h2>
+            <p>For bug reports and feature requests, please visit the plugin repository on GitHub.</p>
+            
+            <hr>
+            <p style="color: #7f8c8d; font-size: 0.9em;">
+                Relationship Manager Plugin v1.2<br>
+                License: GPL v3
+            </p>
             """)
         help_layout.addWidget(help_text)
         tab_help.setLayout(help_layout)
