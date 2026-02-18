@@ -18,7 +18,7 @@ from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction
 import os.path
 
-# Import the dialog file directly
+from . import resources  # noqa: F401 - registers Qt resources
 from .RelazioniPlugin_dialog import RelazioniPluginDialog
 
 
@@ -33,8 +33,7 @@ class RelazioniPlugin:
 
     def initGui(self):
         """Create the menu entries and toolbar icons inside the QGIS GUI."""
-        #icon_path = ':/plugins/relazioniplugin/icon.png'
-        icon_path = os.path.join(self.plugin_dir, 'icon.png') 
+        icon_path = os.path.join(self.plugin_dir, 'icon.png')
         self.action = QAction(QIcon(icon_path), "Relation Manager", self.iface.mainWindow())
         self.action.triggered.connect(self.run)
         self.iface.addToolBarIcon(self.action)

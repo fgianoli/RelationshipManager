@@ -1,14 +1,15 @@
-from PyQt5.QtWidgets import (
-    QDialog, QVBoxLayout, QListWidget, QPushButton, QFileDialog, 
-    QMessageBox, QInputDialog, QComboBox, QLabel, QFormLayout, 
-    QDialogButtonBox, QLineEdit, QTabWidget, QWidget
+from qgis.PyQt.QtWidgets import (
+    QDialog, QVBoxLayout, QHBoxLayout, QListWidget, QPushButton, QFileDialog,
+    QMessageBox, QInputDialog, QComboBox, QLabel, QFormLayout,
+    QDialogButtonBox, QLineEdit, QTabWidget, QWidget, QTextEdit,
+    QGroupBox, QSizePolicy
 )
-from PyQt5.QtGui import QIcon
-from qgis.core import QgsProject, QgsRelation
+from qgis.PyQt.QtGui import QIcon
+from qgis.PyQt.QtCore import QSize
+from qgis.core import QgsProject, QgsRelation, QgsApplication, Qgis
 import json
 import uuid
 from datetime import datetime
-from PyQt5.QtWidgets import QVBoxLayout, QTabWidget, QWidget, QTextEdit
 
 
 class RelazioniPluginDialog(QDialog):
@@ -16,6 +17,7 @@ class RelazioniPluginDialog(QDialog):
         """Constructor."""
         super().__init__()
         self.setWindowTitle("Relationship Manager")
+        self.setMinimumSize(520, 550)
 
         # Set plugin icon
         self.setWindowIcon(QIcon(':/plugins/relazioniplugin/icon.png'))
@@ -28,30 +30,63 @@ class RelazioniPluginDialog(QDialog):
         tab_relazioni = QWidget()
         tab_relazioni_layout = QVBoxLayout()
 
-        # Relationships list
+        # Relationships list with label
+        self.lblContatore = QLabel("Project relationships:")
+        tab_relazioni_layout.addWidget(self.lblContatore)
+
         self.listaRelazioni = QListWidget()
+        self.listaRelazioni.setAlternatingRowColors(True)
+        self.listaRelazioni.setSelectionMode(QListWidget.SingleSelection)
         tab_relazioni_layout.addWidget(self.listaRelazioni)
 
-        # Buttons with icons
-        self.btnEsporta = QPushButton(QIcon(':/plugins/relazioniplugin/export.png'), "Export Relationships")
-        tab_relazioni_layout.addWidget(self.btnEsporta)
+        # --- Gruppo: Gestione relazioni ---
+        grp_gestione = QGroupBox("Manage")
+        grp_gestione_layout = QHBoxLayout()
 
-        self.btnCarica = QPushButton(QIcon(':/plugins/relazioniplugin/import.png'), "Load Relationships")
-        tab_relazioni_layout.addWidget(self.btnCarica)
+        self.btnCrea = QPushButton(QgsApplication.getThemeIcon('/mActionAdd.svg'), " Create")
+        self.btnCrea.setToolTip("Create a new 1:N relationship between two layers")
+        self.btnCrea.setIconSize(QSize(20, 20))
+        grp_gestione_layout.addWidget(self.btnCrea)
 
-        self.btnModifica = QPushButton(QIcon(':/plugins/relazioniplugin/edit.png'), "Edit Relationship")
-        tab_relazioni_layout.addWidget(self.btnModifica)
+        self.btnModifica = QPushButton(QgsApplication.getThemeIcon('/mActionToggleEditing.svg'), " Edit")
+        self.btnModifica.setToolTip("Edit the selected relationship")
+        self.btnModifica.setIconSize(QSize(20, 20))
+        grp_gestione_layout.addWidget(self.btnModifica)
 
-        self.btnDuplica = QPushButton(QIcon(':/plugins/relazioniplugin/duplicate.png'), "Duplicate Relationship")
-        tab_relazioni_layout.addWidget(self.btnDuplica)
+        self.btnDuplica = QPushButton(QgsApplication.getThemeIcon('/mActionEditCopy.svg'), " Duplicate")
+        self.btnDuplica.setToolTip("Create a copy of the selected relationship with a new name")
+        self.btnDuplica.setIconSize(QSize(20, 20))
+        grp_gestione_layout.addWidget(self.btnDuplica)
 
-        self.btnElimina = QPushButton(QIcon(':/plugins/relazioniplugin/delete.png'), "Delete Relationship")
-        tab_relazioni_layout.addWidget(self.btnElimina)
+        self.btnElimina = QPushButton(QgsApplication.getThemeIcon('/mActionDeleteSelected.svg'), " Delete")
+        self.btnElimina.setToolTip("Delete the selected relationship")
+        self.btnElimina.setIconSize(QSize(20, 20))
+        grp_gestione_layout.addWidget(self.btnElimina)
 
-        self.btnCrea = QPushButton(QIcon(':/plugins/relazioniplugin/create.png'), "Create Relationship")
-        tab_relazioni_layout.addWidget(self.btnCrea)
+        grp_gestione.setLayout(grp_gestione_layout)
+        tab_relazioni_layout.addWidget(grp_gestione)
 
-        self.btnStorico = QPushButton(QIcon(':/plugins/relazioniplugin/history.png'), "View History")
+        # --- Gruppo: Import/Export ---
+        grp_file = QGroupBox("Import / Export")
+        grp_file_layout = QHBoxLayout()
+
+        self.btnEsporta = QPushButton(QgsApplication.getThemeIcon('/mActionFileSaveAs.svg'), " Export to JSON")
+        self.btnEsporta.setToolTip("Export all relationships to a JSON file")
+        self.btnEsporta.setIconSize(QSize(20, 20))
+        grp_file_layout.addWidget(self.btnEsporta)
+
+        self.btnCarica = QPushButton(QgsApplication.getThemeIcon('/mActionFileOpen.svg'), " Load from JSON")
+        self.btnCarica.setToolTip("Import relationships from a JSON file")
+        self.btnCarica.setIconSize(QSize(20, 20))
+        grp_file_layout.addWidget(self.btnCarica)
+
+        grp_file.setLayout(grp_file_layout)
+        tab_relazioni_layout.addWidget(grp_file)
+
+        # --- Bottone storico ---
+        self.btnStorico = QPushButton(QgsApplication.getThemeIcon('/mActionUndo.svg'), " View History / Rollback")
+        self.btnStorico.setToolTip("View modification history and rollback changes")
+        self.btnStorico.setIconSize(QSize(20, 20))
         tab_relazioni_layout.addWidget(self.btnStorico)
 
         # Imposta il layout della tab "Relazioni"
@@ -76,22 +111,22 @@ class RelazioniPluginDialog(QDialog):
                 .example { background-color: #e8f6f3; padding: 10px; margin: 10px 0; font-family: monospace; }
                 code { background-color: #f4f4f4; padding: 2px 6px; border-radius: 3px; }
             </style>
-            
+
             <h1>🔗 Relationship Manager Plugin</h1>
-            <p><b>Version 1.2</b> - Manage layer relationships in your QGIS projects with ease.</p>
-            
+            <p><b>Version 1.3</b> - Manage layer relationships in your QGIS projects with ease.</p>
+
             <h2>📋 What are Relationships?</h2>
-            <p>Relationships in QGIS connect features from different layers using key fields. 
-            For example, you can link a <i>Buildings</i> layer to a <i>Addresses</i> layer 
+            <p>Relationships in QGIS connect features from different layers using key fields.
+            For example, you can link a <i>Buildings</i> layer to a <i>Addresses</i> layer
             using a common field like <code>building_id</code>.</p>
-            
+
             <div class="tip">
-                <b>💡 Tip:</b> Relationships enable powerful features like automatic forms with 
+                <b>💡 Tip:</b> Relationships enable powerful features like automatic forms with
                 related records, and are essential for working with relational databases.
             </div>
-            
+
             <h2>🛠️ Features</h2>
-            
+
             <div class="feature">
                 <h3>➕ Create Relationship</h3>
                 <p>Create a new relationship between two layers:</p>
@@ -104,7 +139,7 @@ class RelazioniPluginDialog(QDialog):
                     <li>Click OK to create</li>
                 </ol>
             </div>
-            
+
             <div class="feature">
                 <h3>📤 Export Relationships</h3>
                 <p>Save all project relationships to a JSON file. Useful for:</p>
@@ -114,39 +149,39 @@ class RelazioniPluginDialog(QDialog):
                     <li>Reusing the same structure in other projects</li>
                 </ul>
             </div>
-            
+
             <div class="feature">
                 <h3>📥 Load Relationships</h3>
                 <p>Import relationships from a previously exported JSON file.</p>
                 <div class="warning">
-                    <b>⚠️ Note:</b> The layers referenced in the JSON must exist in the 
+                    <b>⚠️ Note:</b> The layers referenced in the JSON must exist in the
                     current project with the same names.
                 </div>
             </div>
-            
+
             <div class="feature">
                 <h3>✏️ Edit Relationship</h3>
-                <p>Modify an existing relationship. Select it from the list and click 
+                <p>Modify an existing relationship. Select it from the list and click
                 <b>"Edit Relationship"</b> to change its name, layers, or key fields.</p>
             </div>
-            
+
             <div class="feature">
                 <h3>📋 Duplicate Relationship</h3>
-                <p>Create a copy of an existing relationship with a new name. 
+                <p>Create a copy of an existing relationship with a new name.
                 Useful when creating similar relationships.</p>
             </div>
-            
+
             <div class="feature">
                 <h3>🗑️ Delete Relationship</h3>
-                <p>Remove a relationship from the project. This action can be undone 
+                <p>Remove a relationship from the project. This action can be undone
                 using the History feature.</p>
             </div>
-            
+
             <div class="feature">
                 <h3>📜 View History</h3>
                 <p>See all changes made during this session and rollback if needed.</p>
             </div>
-            
+
             <h2>📖 Example: Building-Apartment Relationship</h2>
             <div class="example">
                 <b>Scenario:</b> Link buildings to their apartments<br><br>
@@ -156,9 +191,9 @@ class RelazioniPluginDialog(QDialog):
                 <b>Child Key:</b> fk_building<br><br>
                 This creates a 1:N relationship where each building can have many apartments.
             </div>
-            
+
             <h2>🔧 Troubleshooting</h2>
-            
+
             <div class="warning">
                 <h3>❌ "Key fields not found"</h3>
                 <p>This error occurs when the selected field doesn't exist in the layer. Check that:</p>
@@ -168,7 +203,7 @@ class RelazioniPluginDialog(QDialog):
                     <li>The field exists in both layers</li>
                 </ul>
             </div>
-            
+
             <div class="warning">
                 <h3>❌ Relationship shows as "(INVALID)"</h3>
                 <p>The relationship configuration is incorrect. Common causes:</p>
@@ -179,7 +214,7 @@ class RelazioniPluginDialog(QDialog):
                 </ul>
                 <p><b>Solution:</b> Delete the invalid relationship and recreate it.</p>
             </div>
-            
+
             <div class="warning">
                 <h3>❌ Relationships not loading from JSON</h3>
                 <p>When importing, ensure that:</p>
@@ -189,7 +224,7 @@ class RelazioniPluginDialog(QDialog):
                     <li>Key fields exist in the layers</li>
                 </ul>
             </div>
-            
+
             <h2>💡 Best Practices</h2>
             <ul>
                 <li>Use meaningful relationship names (e.g., "building_has_apartments")</li>
@@ -197,13 +232,13 @@ class RelazioniPluginDialog(QDialog):
                 <li>Use consistent naming conventions for key fields</li>
                 <li>Supported key field types: Integer, String, UUID, and more</li>
             </ul>
-            
+
             <h2>📞 Support</h2>
             <p>For bug reports and feature requests, please visit the plugin repository on GitHub.</p>
-            
+
             <hr>
             <p style="color: #7f8c8d; font-size: 0.9em;">
-                Relationship Manager Plugin v1.2<br>
+                Relationship Manager Plugin v1.3<br>
                 License: GPL v3
             </p>
             """)
@@ -230,19 +265,16 @@ class RelazioniPluginDialog(QDialog):
         # Inizializza la cronologia
         self.history = []
 
-        # FIX ISSUE 3: Connect to project change signals to refresh the list
-        # This ensures the plugin reloads relations when project changes
+        # Connect to project change signals to refresh the list
         QgsProject.instance().cleared.connect(self.on_project_changed)
         QgsProject.instance().readProject.connect(self.on_project_changed)
-        
+
         # Carica le relazioni all'avvio
         self.carica_lista_relazioni()
 
     def on_project_changed(self):
         """Handle project change - clear and reload relations list."""
-        # Clear the history when project changes
         self.history = []
-        # Reload the relations list from the new project
         self.carica_lista_relazioni()
 
     def carica_lista_relazioni(self):
@@ -250,12 +282,14 @@ class RelazioniPluginDialog(QDialog):
         self.listaRelazioni.clear()
         project = QgsProject.instance()
 
-        # Get the relation manager
         relation_manager = project.relationManager()
 
-        # Iterate through all relations and add to the list
         for relation in relation_manager.relations().values():
-            self.listaRelazioni.addItem(f'{relation.id()}: {relation.name()}')
+            strength_label = "Composition" if relation.strength() == Qgis.RelationshipStrength.Composition else "Association"
+            self.listaRelazioni.addItem(f'{relation.id()}: {relation.name()} [{strength_label}]')
+
+        count = self.listaRelazioni.count()
+        self.lblContatore.setText(f"Project relationships: {count}")
 
     def esporta_relazioni(self):
         """Export relationships to a JSON file."""
@@ -270,7 +304,7 @@ class RelazioniPluginDialog(QDialog):
         """Load relationships from a JSON file."""
         file_path, _ = QFileDialog.getOpenFileName(self, "Load relationships", "", "JSON Files (*.json)")
         if not file_path:
-            return  # Esci se l'utente annulla il file dialog
+            return
 
         with open(file_path, 'r') as file:
             try:
@@ -285,7 +319,6 @@ class RelazioniPluginDialog(QDialog):
         project = QgsProject.instance()
         relation_manager = project.relationManager()
 
-        # Variabili per tracciare lo stato
         relazioni_fallite = []
         relazioni_caricate = []
 
@@ -308,15 +341,20 @@ class RelazioniPluginDialog(QDialog):
             # Crea una nuova relazione
             relation = QgsRelation()
             relation.setName(relazione['nome'])
-            relation.setId(relazione_id)  # Usa l'ID dalla struttura JSON
+            relation.setId(relazione_id)
             relation.setReferencingLayer(layer_figlio.id())
             relation.setReferencedLayer(layer_padre.id())
 
+            # Imposta il tipo di relazione (sketcher) se presente nel JSON
+            if 'sketcher' in relazione:
+                relation.setStrength(Qgis.RelationshipStrength(relazione['sketcher']))
+
             # Aggiungi le coppie di chiavi
+            # fieldPairs() exports as {referencing_field: referenced_field} = {child: parent}
             valid_keys = True
-            for chiave_padre, chiave_figlio in relazione['chiavi'].items():
-                if chiave_padre in layer_padre.fields().names() and chiave_figlio in layer_figlio.fields().names():
-                    relation.addFieldPair(chiave_padre, chiave_figlio)
+            for chiave_figlio, chiave_padre in relazione['chiavi'].items():
+                if chiave_figlio in layer_figlio.fields().names() and chiave_padre in layer_padre.fields().names():
+                    relation.addFieldPair(chiave_figlio, chiave_padre)
                 else:
                     relazioni_fallite.append(f"Invalid key pair: {chiave_padre} -> {chiave_figlio} in relationship '{relazione['nome']}'")
                     valid_keys = False
@@ -325,7 +363,6 @@ class RelazioniPluginDialog(QDialog):
             # Aggiungi la relazione al manager se le chiavi sono valide
             if valid_keys:
                 if relation_manager.addRelation(relation) or relation_manager.relation(relazione_id):
-                    # La relazione è stata aggiunta o esiste già, considerala come caricata
                     relazioni_caricate.append(relazione['nome'])
                 else:
                     relazioni_fallite.append(f"Failed to add relationship '{relazione['nome']}' to the project")
@@ -350,44 +387,53 @@ class RelazioniPluginDialog(QDialog):
 
         relazione_id = selected.text().split(":")[0]
 
-        # Get the selected relation data
         relation = QgsProject.instance().relationManager().relation(relazione_id)
         if not relation:
             QMessageBox.warning(self, "Error", "Relationship not found.")
             return
 
-        # Retrieve relation details
         relazione_details = self.ottieni_dettagli_relazione(relation)
 
-        # Open the dialog to modify the relationship
         dialog = QDialog(self)
-        dialog.setWindowTitle(f"Edit Relationship: {relazione_details['id']}")  # Mostra l'ID nella finestra
+        dialog.setWindowTitle(f"Edit Relationship: {relazione_details['id']}")
         layout = QFormLayout()
 
-        # Pre-fill data
         nome_relazione = QLineEdit(relazione_details['nome'])
         layer_padre = self._crea_layer_combo(relazione_details['layer_padre'])
-        layer_figlio = self._crea_layer_combo(relazione_details['layer_figlio'])  # Verifica layer figlio
+        layer_figlio = self._crea_layer_combo(relazione_details['layer_figlio'])
 
-        chiavi_padre = self._crea_field_combo(layer_padre.currentText(), list(relazione_details['chiavi'].keys())[0])
-        chiavi_figlio = self._crea_field_combo(layer_figlio.currentText(), list(relazione_details['chiavi'].values())[0])
+        # chiavi from ottieni_dettagli_relazione uses fieldPairs() = {child: parent}
+        chiavi_keys = list(relazione_details['chiavi'].keys())    # referencing/child fields
+        chiavi_values = list(relazione_details['chiavi'].values())  # referenced/parent fields
+
+        chiavi_padre = self._crea_field_combo(layer_padre.currentText(), chiavi_values[0] if chiavi_values else None)
+        chiavi_figlio = self._crea_field_combo(layer_figlio.currentText(), chiavi_keys[0] if chiavi_keys else None)
+
+        # Combobox per il tipo di relazione (strength)
+        strength_combo = self._crea_strength_combo(relazione_details.get('sketcher'))
+
+        # Aggiorna i campi quando cambia il layer selezionato
+        layer_padre.currentTextChanged.connect(lambda name: self._aggiorna_field_combo(chiavi_padre, name))
+        layer_figlio.currentTextChanged.connect(lambda name: self._aggiorna_field_combo(chiavi_figlio, name))
 
         layout.addRow("Relationship Name:", nome_relazione)
         layout.addRow("Parent Layer:", layer_padre)
         layout.addRow("Child Layer:", layer_figlio)
         layout.addRow("Parent Key:", chiavi_padre)
         layout.addRow("Child Key:", chiavi_figlio)
+        layout.addRow("Strength:", strength_combo)
 
         buttonBox = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         layout.addWidget(buttonBox)
         dialog.setLayout(layout)
 
-        # Connect the confirm button
+        # chiavi dict uses QGIS convention: {referencing/child: referenced/parent}
         buttonBox.accepted.connect(lambda: self.modifica_relazione_esistente(relazione_details['id'], {
             'nome': nome_relazione.text(),
             'layer_padre': layer_padre.currentText(),
             'layer_figlio': layer_figlio.currentText(),
-            'chiavi': {chiavi_padre.currentText(): chiavi_figlio.currentText()}
+            'chiavi': {chiavi_figlio.currentText(): chiavi_padre.currentText()},
+            'sketcher': strength_combo.currentData()
         }))
         buttonBox.rejected.connect(dialog.reject)
 
@@ -405,7 +451,6 @@ class RelazioniPluginDialog(QDialog):
         project = QgsProject.instance()
         relation = project.relationManager().relation(relazione_id)
 
-        # Verifica se il layer padre e figlio esistono
         layer_figlio = project.mapLayersByName(relation.referencingLayer().name())
         layer_padre = project.mapLayersByName(relation.referencedLayer().name())
 
@@ -417,27 +462,24 @@ class RelazioniPluginDialog(QDialog):
         if not ok or not nuovo_nome:
             return
 
-        # Crea un nuovo ID per la relazione duplicata
         nuovo_id = f'duplicated_{relazione_id}_{str(uuid.uuid4())}'
 
-        # Duplicare la relazione
+        # fieldPairs() already returns {referencing/child: referenced/parent}
         nuova_relazione = {
             'id': nuovo_id,
             'nome': nuovo_nome,
             'layer_figlio': layer_figlio[0].name(),
             'layer_padre': layer_padre[0].name(),
-            'chiavi': relation.fieldPairs()
+            'chiavi': relation.fieldPairs(),
+            'sketcher': relation.strength()
         }
 
-        # Aggiungere la nuova relazione al progetto
-        self.crea_relazione_esistente(nuova_relazione)  # Rimuove il controllo condizionale
-        
-        # Aggiungere l'azione alla cronologia
-        self.add_to_history(f"Duplicated relationship: {nuovo_nome}", nuova_relazione)
-        
+        self.crea_relazione_esistente(nuova_relazione, registra_storia=False)
+
+        self.add_to_history("duplicate", nuova_relazione)
+
         QMessageBox.information(self, "Duplicate", "Relationship duplicated successfully!")
 
-        # Aggiornare la lista delle relazioni
         self.carica_lista_relazioni()
 
     def elimina_relazione(self):
@@ -456,16 +498,16 @@ class RelazioniPluginDialog(QDialog):
             QMessageBox.warning(self, "Error", "Relationship not found.")
             return
 
-        # Save current state to history before deletion
-        relazione_details = self.ottieni_dettagli_relazione(relation)
-        self.add_to_history("delete", relazione_details)
-
         confirm = QMessageBox.question(
             self, "Delete Relationship",
-            "Are you sure you want to delete this relationship?", 
+            "Are you sure you want to delete this relationship?",
             QMessageBox.Yes | QMessageBox.No
         )
         if confirm == QMessageBox.Yes:
+            # Save state to history only after user confirms deletion
+            relazione_details = self.ottieni_dettagli_relazione(relation)
+            self.add_to_history("delete", relazione_details)
+
             relation_manager.removeRelation(relazione_id)
             self.carica_lista_relazioni()
             QMessageBox.information(self, "Delete", "Relationship deleted successfully!")
@@ -483,28 +525,37 @@ class RelazioniPluginDialog(QDialog):
         chiavi_padre = self._crea_field_combo(layer_padre.currentText(), None)
         chiavi_figlio = self._crea_field_combo(layer_figlio.currentText(), None)
 
+        # Combobox per il tipo di relazione (strength)
+        strength_combo = self._crea_strength_combo(None)
+
+        # Aggiorna i campi quando cambia il layer selezionato
+        layer_padre.currentTextChanged.connect(lambda name: self._aggiorna_field_combo(chiavi_padre, name))
+        layer_figlio.currentTextChanged.connect(lambda name: self._aggiorna_field_combo(chiavi_figlio, name))
+
         layout.addRow("Relationship Name:", nome_relazione)
         layout.addRow("Parent Layer:", layer_padre)
         layout.addRow("Child Layer:", layer_figlio)
         layout.addRow("Parent Key:", chiavi_padre)
         layout.addRow("Child Key:", chiavi_figlio)
+        layout.addRow("Strength:", strength_combo)
 
         buttonBox = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         layout.addWidget(buttonBox)
         dialog.setLayout(layout)
 
-        # Connect the confirm button
+        # chiavi dict uses QGIS convention: {referencing/child: referenced/parent}
         buttonBox.accepted.connect(lambda: self.crea_relazione_esistente({
             'nome': nome_relazione.text(),
             'layer_padre': layer_padre.currentText(),
             'layer_figlio': layer_figlio.currentText(),
-            'chiavi': {chiavi_padre.currentText(): chiavi_figlio.currentText()}
+            'chiavi': {chiavi_figlio.currentText(): chiavi_padre.currentText()},
+            'sketcher': strength_combo.currentData()
         }))
         buttonBox.rejected.connect(dialog.reject)
 
         dialog.exec()
 
-    def crea_relazione_esistente(self, nuova_relazione):
+    def crea_relazione_esistente(self, nuova_relazione, registra_storia=True):
         """Create a new relationship in the project."""
         project = QgsProject.instance()
 
@@ -514,13 +565,13 @@ class RelazioniPluginDialog(QDialog):
 
         if not layer_figlio or not layer_padre:
             QMessageBox.warning(self, "Error", "Parent or child layer not found.")
-            return False
+            return
 
         layer_figlio = layer_figlio[0]
         layer_padre = layer_padre[0]
 
-        # Genera un ID univoco basato sul nome del layer e il nome della relazione
-        relation_id = nuova_relazione['id']
+        # Usa l'ID fornito oppure generane uno univoco
+        relation_id = nuova_relazione.get('id') or f"{layer_padre.id()}_{layer_figlio.id()}_{nuova_relazione['nome']}".replace(' ', '_').lower()
 
         # Crea la relazione
         relation = QgsRelation()
@@ -529,26 +580,32 @@ class RelazioniPluginDialog(QDialog):
         relation.setReferencingLayer(layer_figlio.id())
         relation.setReferencedLayer(layer_padre.id())
 
+        # Imposta il tipo di relazione (sketcher)
+        sketcher = nuova_relazione.get('sketcher')
+        if sketcher is not None:
+            relation.setStrength(sketcher)
+
         # Aggiungi le coppie di chiavi
-        for chiave_padre, chiave_figlio in nuova_relazione['chiavi'].items():
-            if chiave_padre in [field.name() for field in layer_padre.fields()] and chiave_figlio in [field.name() for field in layer_figlio.fields()]:
-                relation.addFieldPair(chiave_padre, chiave_figlio)
+        # chiavi dict uses QGIS convention: {referencing/child: referenced/parent}
+        for chiave_figlio, chiave_padre in nuova_relazione['chiavi'].items():
+            if chiave_figlio in [field.name() for field in layer_figlio.fields()] and chiave_padre in [field.name() for field in layer_padre.fields()]:
+                relation.addFieldPair(chiave_figlio, chiave_padre)
             else:
-                QMessageBox.warning(self, "Error", f"Key fields not found: {chiave_padre}, {chiave_figlio}")
-                return False
+                QMessageBox.warning(self, "Error", f"Key fields not found: {chiave_padre} (parent), {chiave_figlio} (child)")
+                return
 
         # Aggiungi la relazione al manager delle relazioni
         relation_manager = project.relationManager()
         relation_manager.addRelation(relation)
 
-        # Aggiorna la visualizzazione delle relazioni e salva il progetto
+        # Aggiorna la lista delle relazioni e salva il progetto
         self.carica_lista_relazioni()
-        self.add_to_history(f"Created new relationship: {nuova_relazione['nome']}")
-        project.setDirty(True)
-        project.write()
 
-        QMessageBox.information(self, "Create", "Relationship created successfully!")
-        return True
+        if registra_storia:
+            self.add_to_history("create", nuova_relazione)
+            project.setDirty(True)
+            project.write()
+            QMessageBox.information(self, "Create", "Relationship created successfully!")
 
 
 
@@ -596,7 +653,6 @@ class RelazioniPluginDialog(QDialog):
             project = QgsProject.instance()
             relation_manager = project.relationManager()
 
-            # Check if the relationship already exists to avoid duplicates
             if not relation_manager.relation(details['id']):
                 relation = QgsRelation()
                 relation.setName(details['nome'])
@@ -604,8 +660,11 @@ class RelazioniPluginDialog(QDialog):
                 relation.setReferencingLayer(project.mapLayersByName(details['layer_figlio'])[0].id())
                 relation.setReferencedLayer(project.mapLayersByName(details['layer_padre'])[0].id())
 
-                for chiave_padre, chiave_figlio in details['chiavi'].items():
-                    relation.addFieldPair(chiave_padre, chiave_figlio)
+                if 'sketcher' in details and details['sketcher'] is not None:
+                    relation.setStrength(details['sketcher'])
+
+                for chiave_figlio, chiave_padre in details['chiavi'].items():
+                    relation.addFieldPair(chiave_figlio, chiave_padre)
 
                 relation_manager.addRelation(relation)
                 self.carica_lista_relazioni()
@@ -616,18 +675,19 @@ class RelazioniPluginDialog(QDialog):
             relation_manager = project.relationManager()
             relazione_id = details['id']
 
-            # Remove the current version
             relation_manager.removeRelation(relazione_id)
 
-            # Recreate the old version
             relation = QgsRelation()
             relation.setName(details['nome'])
             relation.setId(relazione_id)
             relation.setReferencingLayer(project.mapLayersByName(details['layer_figlio'])[0].id())
             relation.setReferencedLayer(project.mapLayersByName(details['layer_padre'])[0].id())
 
-            for chiave_padre, chiave_figlio in details['chiavi'].items():
-                relation.addFieldPair(chiave_padre, chiave_figlio)
+            if 'sketcher' in details and details['sketcher'] is not None:
+                relation.setStrength(details['sketcher'])
+
+            for chiave_figlio, chiave_padre in details['chiavi'].items():
+                relation.addFieldPair(chiave_figlio, chiave_padre)
 
             relation_manager.addRelation(relation)
             self.carica_lista_relazioni()
@@ -653,17 +713,17 @@ class RelazioniPluginDialog(QDialog):
         relation_manager = project.relationManager()
 
         for relation_id, relation in relation_manager.relations().items():
-            # Verifica che `relation` sia effettivamente un oggetto QgsRelation
             if isinstance(relation, QgsRelation):
                 relazioni[relation.id()] = {
                     'nome': relation.name(),
                     'referencing_layer': relation.referencingLayer().name(),
                     'referenced_layer': relation.referencedLayer().name(),
-                    'chiavi': relation.fieldPairs()
+                    'chiavi': relation.fieldPairs(),
+                    'sketcher': int(relation.strength())
                 }
             else:
                 print(f"Warning: Relation with ID {relation_id} is not a valid QgsRelation object.")
-        
+
         return relazioni
 
     def ottieni_dettagli_relazione(self, relation):
@@ -672,26 +732,24 @@ class RelazioniPluginDialog(QDialog):
             return {}
 
         project = QgsProject.instance()
-        
-        # Trova i layer padre e figlio dalla relazione
+
         layer_padre = project.mapLayer(relation.referencedLayerId())
         layer_figlio = project.mapLayer(relation.referencingLayerId())
-        
-        # Assicurati che i layer siano validi
+
         if not layer_padre or not layer_figlio:
             QMessageBox.warning(self, "Error", "Parent or child layer not found.")
             return {}
 
-        # Ottieni le coppie di chiavi
         field_pairs = relation.fieldPairs()
         chiavi = {key: value for key, value in field_pairs.items()}
 
         return {
-            'id': relation.id(),  # Aggiungi l'ID della relazione
+            'id': relation.id(),
             'nome': relation.name(),
             'layer_padre': layer_padre.name(),
             'layer_figlio': layer_figlio.name(),
-            'chiavi': chiavi
+            'chiavi': chiavi,
+            'sketcher': relation.strength()
         }
 
     def modifica_relazione_esistente(self, relazione_id, nuova_relazione):
@@ -717,61 +775,18 @@ class RelazioniPluginDialog(QDialog):
         relation.setReferencingLayer(layer_figlio.id())
         relation.setReferencedLayer(layer_padre.id())
 
-        for chiave_padre, chiave_figlio in nuova_relazione['chiavi'].items():
-            relation.addFieldPair(chiave_padre, chiave_figlio)
+        # Imposta il tipo di relazione (sketcher)
+        sketcher = nuova_relazione.get('sketcher')
+        if sketcher is not None:
+            relation.setStrength(sketcher)
+
+        # chiavi dict uses QGIS convention: {referencing/child: referenced/parent}
+        for chiave_figlio, chiave_padre in nuova_relazione['chiavi'].items():
+            relation.addFieldPair(chiave_figlio, chiave_padre)
 
         relation_manager.addRelation(relation)
         self.carica_lista_relazioni()
         QMessageBox.information(self, "Edit", "Relationship modified successfully!")
-
-    def crea_relazione_esistente(self, nuova_relazione):
-        """Create a new relationship in the project."""
-        project = QgsProject.instance()
-
-        # Verifica l'esistenza dei layer
-        layer_figlio = project.mapLayersByName(nuova_relazione['layer_figlio'])
-        layer_padre = project.mapLayersByName(nuova_relazione['layer_padre'])
-
-        if not layer_figlio or not layer_padre:
-            QMessageBox.warning(self, "Error", "Parent or child layer not found.")
-            return
-
-        layer_figlio = layer_figlio[0]  # Seleziona il primo layer corrispondente
-        layer_padre = layer_padre[0]
-
-        # Genera un ID univoco basato sul nome del layer e il nome della relazione
-        relation_id = f"{layer_padre.id()}_{layer_figlio.id()}_{nuova_relazione['nome']}".replace(' ', '_').lower()
-
-        # Crea la relazione
-        relation = QgsRelation()
-        relation.setName(nuova_relazione['nome'])
-        relation.setId(relation_id)  # Imposta l'ID univoco
-        relation.setReferencingLayer(layer_figlio.id())
-        relation.setReferencedLayer(layer_padre.id())
-
-        # Aggiungi le coppie di chiavi
-        for chiave_padre, chiave_figlio in nuova_relazione['chiavi'].items():
-            if chiave_padre in [field.name() for field in layer_padre.fields()] and chiave_figlio in [field.name() for field in layer_figlio.fields()]:
-                relation.addFieldPair(chiave_padre, chiave_figlio)
-            else:
-                QMessageBox.warning(self, "Error", f"Key fields not found: {chiave_padre}, {chiave_figlio}")
-                return
-
-        # Aggiungi la relazione al manager delle relazioni
-        relation_manager = project.relationManager()
-        relation_manager.addRelation(relation)
-
-        # Aggiorna la lista delle relazioni e salva il progetto
-        self.carica_lista_relazioni()
-        self.add_to_history(f"Created new relationship: {nuova_relazione['nome']}", nuova_relazione)
-
-        # Salvataggio esplicito del progetto
-        project.setDirty(True)
-        project.write()
-
-        QMessageBox.information(self, "Create", "Relationship created successfully!")
-
-
 
     def add_to_history(self, action, dettagli):
         """Add an action to the modification history."""
@@ -790,10 +805,9 @@ class RelazioniPluginDialog(QDialog):
                 combo.setCurrentText(layer.name())
                 found = True
 
-        # Se il layer pre-selezionato non è stato trovato, segnala un avviso
-        if not found:
+        if not found and layer_name_preselezionato is not None:
             QMessageBox.warning(self, "Layer Not Found", f"Layer '{layer_name_preselezionato}' not found in the project.")
-        
+
         return combo
 
     def _crea_field_combo(self, layer_name, chiave_preselezionata):
@@ -801,9 +815,34 @@ class RelazioniPluginDialog(QDialog):
         combo = QComboBox()
         project = QgsProject.instance()
         if layer_name:
-            layer = project.mapLayersByName(layer_name)[0]
-            for field in layer.fields():
-                combo.addItem(field.name())
-                if chiave_preselezionata and field.name() == chiave_preselezionata:
-                    combo.setCurrentText(field.name())
+            layers = project.mapLayersByName(layer_name)
+            if layers:
+                for field in layers[0].fields():
+                    combo.addItem(field.name())
+                    if chiave_preselezionata and field.name() == chiave_preselezionata:
+                        combo.setCurrentText(field.name())
+        return combo
+
+    def _aggiorna_field_combo(self, field_combo, layer_name):
+        """Update the field combo box when the layer selection changes."""
+        field_combo.clear()
+        if layer_name:
+            project = QgsProject.instance()
+            layers = project.mapLayersByName(layer_name)
+            if layers:
+                for field in layers[0].fields():
+                    field_combo.addItem(field.name())
+
+    def _crea_strength_combo(self, sketcher_preselezionato):
+        """Create a combobox to select the relationship strength (Association/Composition)."""
+        combo = QComboBox()
+        combo.addItem("Association", Qgis.RelationshipStrength.Association)
+        combo.addItem("Composition", Qgis.RelationshipStrength.Composition)
+
+        if sketcher_preselezionato is not None:
+            if sketcher_preselezionato == Qgis.RelationshipStrength.Composition:
+                combo.setCurrentIndex(1)
+            else:
+                combo.setCurrentIndex(0)
+
         return combo

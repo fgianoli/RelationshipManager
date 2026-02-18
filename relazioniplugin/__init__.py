@@ -23,7 +23,6 @@
  This script initializes the plugin, making it known to QGIS.
 """
 
-from PyQt5.QtGui import QIcon
 
 # noinspection PyPep8Naming
 def classFactory(iface):  # pylint: disable=invalid-name
@@ -34,31 +33,3 @@ def classFactory(iface):  # pylint: disable=invalid-name
     """
     from .RelazioniPlugin import RelazioniPlugin
     return RelazioniPlugin(iface)
-
-
-class RelazioniPlugin:
-    def __init__(self, iface):
-        """Constructor."""
-        self.iface = iface
-        self.plugin_dir = os.path.dirname(__file__)
-        self.action = None
-
-    def initGui(self):
-        """Create the menu entries and toolbar icons inside the QGIS GUI."""
-        self.action = QAction(QIcon(':/plugins/relazioniplugin/icon.png'), "RelationManager", self.iface.mainWindow())
-        self.action.triggered.connect(self.run)
-
-        # Add toolbar button and menu entry
-        self.iface.addToolBarIcon(self.action)
-        self.iface.addPluginToMenu("&RelationManager", self.action)
-
-    def unload(self):
-        """Remove the plugin menu item and icon from QGIS GUI."""
-        self.iface.removeToolBarIcon(self.action)
-        self.iface.removePluginMenu("&RelationManager", self.action)
-
-    def run(self):
-        """Run method that performs all the real work."""
-        # Display the plugin's main dialog
-        dlg = RelazioniPluginDialog(self.iface)
-        dlg.exec_()

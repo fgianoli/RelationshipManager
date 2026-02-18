@@ -6,7 +6,7 @@
 name=Relation Manager
 qgisMinimumVersion=3.0
 description=this plugin helps in the management of 1:N project relations
-version=1.2
+version=1.3.0
 author=Federico Gianoli
 email=gianoli.federico@gmail.com
 
@@ -20,7 +20,28 @@ repository=https://github.com/fgianoli/RelationshipManager
 
 hasProcessingProvider=no
 # Uncomment the following line and add your changelog:
-changelog= added the help section and closed the reported issues
+changelog=
+    1.3.0 - Bug fixes, GUI improvements and Qt6 compatibility:
+        - Fixed: field combo boxes now update dynamically when parent/child layer selection changes
+        - Fixed: load from JSON failed due to swapped field validation (child/parent fields checked against wrong layers)
+        - Fixed: addFieldPair arguments were swapped in create/edit, causing invalid relationships
+        - Fixed: removed duplicate crea_relazione_esistente function definition (dead code)
+        - Fixed: spurious "Layer Not Found" warning when opening Create Relationship dialog
+        - Fixed: IndexError crash when editing relationships with empty key fields
+        - Fixed: rollback for create/duplicate actions never matched (action string mismatch)
+        - Fixed: history was recorded even when user cancelled delete operation
+        - Fixed: duplicate operation showed double message box and double history entry
+        - Fixed: removed dead RelazioniPlugin class from __init__.py
+        - Fixed: Qt resources were never registered (resources.py not imported)
+        - Fixed: QRC prefix case mismatch (RelazioniPlugin vs relazioniplugin)
+        - GUI: replaced non-existent button icons with native QGIS theme icons
+        - GUI: grouped buttons logically (Manage, Import/Export, History)
+        - GUI: horizontal button layout for compact design
+        - GUI: added relationship counter label
+        - GUI: added tooltips on all buttons
+        - GUI: set minimum dialog size, alternating row colors on list
+        - Migrated all PyQt5 imports to qgis.PyQt for Qt5/Qt6 compatibility
+    1.2.1 - Added the help section and closed the reported issues
 
 # Tags are comma separated with spaces allowed
 tags=relation, relationship, 1:n, project relations
