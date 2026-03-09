@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/plugins/relazioniplugin" >
+        <file>icon.png</file>
+    </qresource>
+</RCC>
