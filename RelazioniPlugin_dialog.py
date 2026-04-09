@@ -6,7 +6,7 @@ from qgis.PyQt.QtWidgets import (
 )
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtCore import QSize
-from qgis.core import QgsProject, QgsRelation, QgsApplication, Qgis
+from qgis.core import QgsProject, QgsRelation, QgsApplication, Qgis, QgsVectorLayer
 import json
 import uuid
 from datetime import datetime
@@ -839,6 +839,8 @@ class RelazioniPluginDialog(QDialog):
         found = False
 
         for layer in project.mapLayers().values():
+            if not isinstance(layer, QgsVectorLayer):
+                continue
             combo.addItem(layer.name())
             if layer.name() == layer_name_preselezionato:
                 combo.setCurrentText(layer.name())
